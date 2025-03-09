@@ -12,9 +12,11 @@ import {
 
 const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon },
-    { name: 'ID Management', href: '/id-management', icon: IdentificationIcon },
+    { name: 'Verification', href: '/registrations', icon: Cog6ToothIcon },
+    { name: 'Success Registrations', href: '/success-registrations', icon: IdentificationIcon },
+    { name: 'Failed Registrations', href: '/failed-registrations', icon: IdentificationIcon },
+    { name: 'Spot Registration', href: '/add-participant', icon: UserPlusIcon },
     { name: 'Events', href: '/events', icon: CalendarIcon },
-    { name: 'Add Participant', href: '/add-participant', icon: UserPlusIcon },
     { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
     { name: 'Developer', href: '/developer', icon: Cog6ToothIcon },
 ];

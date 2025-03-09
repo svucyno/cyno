@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { toast } from 'react-toastify';
+import { Query, DocumentData } from 'firebase/firestore';
 
 interface Event {
     id: string;
@@ -26,6 +27,7 @@ interface Participant {
     name: string;
     email: string;
     uid: string;
+    selectedEvents?: string[];
 }
 
 export default function EventDetails() {
@@ -34,18 +36,19 @@ export default function EventDetails() {
 
     const [event, setEvent] = useState<Event | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<Participant[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searching, setSearching] = useState(false);
     const [registeredParticipants, setRegisteredParticipants] = useState<Participant[]>([]);
     const [loadingParticipants, setLoadingParticipants] = useState(true);
     const [showWinnersModal, setShowWinnersModal] = useState(false);
     const [selectedPosition, setSelectedPosition] = useState<'first' | 'second' | 'third' | null>(null);
     const [winnerSearchQuery, setWinnerSearchQuery] = useState('');
     const [filteredParticipants, setFilteredParticipants] = useState<Participant[]>([]);
+    const [allRegistrations, setAllRegistrations] = useState<Participant[]>([]);
+    const [filteredRegistrations, setFilteredRegistrations] = useState<Participant[]>([]);
 
     useEffect(() => {
         fetchEventDetails();
+        fetchAllRegistrations();
     }, [eventId]);
 
     useEffect(() => {
@@ -68,6 +71,18 @@ export default function EventDetails() {
         }
     }, [winnerSearchQuery, registeredParticipants]);
 
+    useEffect(() => {
+        if (allRegistrations.length > 0) {
+            const searchQueryLower = searchQuery.toLowerCase();
+            const filtered = allRegistrations.filter(participant =>
+                participant.name.toLowerCase().includes(searchQueryLower) ||
+                participant.email.toLowerCase().includes(searchQueryLower) ||
+                participant.uid.toLowerCase().includes(searchQueryLower)
+            );
+            setFilteredRegistrations(filtered);
+        }
+    }, [searchQuery, allRegistrations]);
+
     const fetchEventDetails = async () => {
         setLoading(true);
         try {
@@ -76,12 +91,12 @@ export default function EventDetails() {
                 const eventData = { id: eventDoc.id, ...eventDoc.data() } as Event;
                 setEvent(eventData);
 
-                // Fetch registered participants details
+                // Fetch registered participants details from successRegistrations
                 if (eventData.registeredParticipants?.length > 0) {
                     setLoadingParticipants(true);
                     const participantsSnapshot = await getDocs(
                         query(
-                            collection(db, 'participants'),
+                            collection(db, 'successRegistrations'),
                             where('uid', 'in', eventData.registeredParticipants)
                         )
                     );
@@ -103,69 +118,19 @@ export default function EventDetails() {
         }
     };
 
-    const searchParticipants = async () => {
-        if (!searchQuery.trim()) return;
-
-        setSearching(true);
+    const fetchAllRegistrations = async () => {
         try {
-            const participantsRef = collection(db, 'participants');
-            let q;
-
-            // Check if search query is an email
-            if (searchQuery.includes('@')) {
-                q = query(
-                    participantsRef,
-                    where('isIssued', '==', true),
-                    where('email', '==', searchQuery.toLowerCase())
-                );
-            }
-            // Check if search query is a UID
-            else if (searchQuery.match(/^[0-9]+$/)) {
-                q = query(
-                    participantsRef,
-                    where('isIssued', '==', true),
-                    where('uid', '==', searchQuery)
-                );
-            }
-            // Default to name search - making it case insensitive
-            else {
-                const searchQueryLower = searchQuery.toLowerCase();
-                q = query(
-                    participantsRef,
-                    where('isIssued', '==', true),
-                    where('name', '>=', searchQueryLower),
-                    where('name', '<=', searchQueryLower + '\uf8ff')
-                );
-            }
-
-            const querySnapshot = await getDocs(q);
-            let participantsData = querySnapshot.docs.map(doc => ({
+            const registrationsRef = collection(db, 'successRegistrations');
+            const registrationsSnapshot = await getDocs(registrationsRef);
+            const registrationsData = registrationsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             })) as Participant[];
-
-            // Additional filtering for case-insensitive search
-            if (!searchQuery.match(/^[0-9]+$/)) {
-                const searchQueryLower = searchQuery.toLowerCase();
-                participantsData = participantsData.filter(participant => {
-                    const nameMatch = participant.name.toLowerCase().includes(searchQueryLower);
-                    const emailMatch = searchQuery.includes('@') ?
-                        participant.email.toLowerCase() === searchQueryLower :
-                        false;
-                    return nameMatch || emailMatch;
-                });
-            }
-
-            // Filter out already registered participants
-            const filteredParticipants = participantsData.filter(
-                participant => !event?.registeredParticipants?.includes(participant.uid)
-            );
-
-            setSearchResults(filteredParticipants);
+            setAllRegistrations(registrationsData);
+            setFilteredRegistrations(registrationsData);
         } catch (error) {
-            console.error('Error searching participants:', error);
-        } finally {
-            setSearching(false);
+            console.error('Error fetching registrations:', error);
+            toast.error('Error loading registrations');
         }
     };
 
@@ -203,8 +168,12 @@ export default function EventDetails() {
                 };
             });
             setRegisteredParticipants(prev => [...prev, participant]);
-            setSearchResults(prev => prev.filter(p => p.id !== participant.id));
-            setSearchQuery('');
+            setFilteredRegistrations(prev =>
+                prev.map(p => p.id === participant.id
+                    ? { ...p, isRegistered: true }
+                    : p
+                )
+            );
 
             toast.success('Participant successfully added to the event!');
         } catch (error) {
@@ -341,66 +310,55 @@ export default function EventDetails() {
                     </div>
 
                     <div className="bg-white shadow rounded-lg p-6">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-4">Add Participant</h2>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-4">All Registrations</h2>
                         <div className="mb-4">
                             <label htmlFor="search" className="block text-sm font-medium text-gray-700">
-                                Search Participants
+                                Search Registrations
                             </label>
-                            <div className="mt-1 flex rounded-md shadow-sm">
+                            <div className="mt-1">
                                 <input
                                     type="text"
                                     name="search"
                                     id="search"
-                                    className="flex-1 min-w-0 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
+                                    className="block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                                     placeholder="Search by name, email, or ID"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && searchParticipants()}
                                 />
-                                <button
-                                    type="button"
-                                    onClick={searchParticipants}
-                                    className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                    disabled={searching}
-                                >
-                                    {searching ? (
-                                        <>
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                            Searching...
-                                        </>
-                                    ) : (
-                                        'Search'
-                                    )}
-                                </button>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            {searchResults.length === 0 && searchQuery && !searching && (
+                        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                            {filteredRegistrations.length === 0 ? (
                                 <div className="text-center py-4 text-gray-500">
-                                    No participants found
+                                    No registrations found
                                 </div>
-                            )}
-                            {searchResults.map((participant) => (
-                                <div
-                                    key={participant.id}
-                                    className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors duration-150"
-                                >
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">
-                                            {participant.name}
-                                        </p>
-                                        <p className="text-sm text-gray-500">{participant.email}</p>
-                                        <p className="text-xs text-gray-400">ID: {participant.uid}</p>
-                                    </div>
-                                    <button
-                                        onClick={() => registerParticipant(participant)}
-                                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            ) : (
+                                filteredRegistrations.map((participant) => (
+                                    <div
+                                        key={participant.id}
+                                        className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors duration-150"
                                     >
-                                        Add
-                                    </button>
-                                </div>
-                            ))}
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">
+                                                {participant.name}
+                                            </p>
+                                            <p className="text-sm text-gray-500">{participant.email}</p>
+                                            <p className="text-xs text-gray-400">ID: {participant.uid}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => registerParticipant(participant)}
+                                            className={`inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md ${event?.registeredParticipants?.includes(participant.uid)
+                                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                                                : 'text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                                                }`}
+                                            disabled={event?.registeredParticipants?.includes(participant.uid)}
+                                        >
+                                            {event?.registeredParticipants?.includes(participant.uid) ? 'Added' : 'Add'}
+                                        </button>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>

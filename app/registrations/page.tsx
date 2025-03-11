@@ -13,6 +13,8 @@ interface Registration {
     paymentId: string;
     totalAmount: number;
     date: string;
+    selectedEvents?: string[];
+    uid: string;
 }
 
 export default function RegistrationsPage() {
@@ -59,14 +61,51 @@ export default function RegistrationsPage() {
     const handleVerification = async (registration: Registration, isVerified: boolean) => {
         const action = isVerified ? 'verify' : 'reject';
         setProcessingActions(prev => ({ ...prev, [registration.id]: action }));
+
         try {
-            // Add to the appropriate collection based on verification status
+            if (isVerified) {
+                // Try to send email first
+                try {
+                    console.log('Attempting to send verification email to:', registration.email);
+                    const emailData = {
+                        to: registration.email,
+                        name: registration.name,
+                        uid: registration.uid,
+                        events: registration.selectedEvents || []
+                    };
+                    console.log('Email data:', emailData);
+
+                    const response = await fetch('/api/send-verification', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(emailData),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error('Failed to send verification email:', errorData);
+                        toast.error('Failed to send verification email. Please try again.');
+                        return;
+                    }
+
+                    const responseData = await response.json();
+                    console.log('Email sent successfully:', responseData);
+                } catch (emailError: any) {
+                    console.error('Error sending verification email:', emailError);
+                    toast.error('Failed to send verification email. Please try again.');
+                    return;
+                }
+            }
+
+            // Proceed with verification only if email was sent successfully
             const targetCollection = isVerified ? 'successRegistrations' : 'failedRegistrations';
-            await addDoc(collection(db, targetCollection), {
+            const newDoc = await addDoc(collection(db, targetCollection), {
                 ...registration,
                 verifiedAt: new Date().toISOString(),
                 status: isVerified ? 'verified' : 'rejected',
-                date: new Date().toISOString() // Add registration date
+                date: new Date().toISOString()
             });
 
             // Remove from registrations collection
@@ -79,7 +118,7 @@ export default function RegistrationsPage() {
                 reg.paymentId.toLowerCase().includes(searchQuery.toLowerCase())
             ));
 
-            toast.success(`Registration ${isVerified ? 'verified' : 'rejected'} successfully`);
+            toast.success(`Registration ${isVerified ? 'verified and email sent' : 'rejected'} successfully`);
         } catch (error) {
             console.error('Error processing registration:', error);
             toast.error('Error processing registration');
@@ -163,6 +202,12 @@ export default function RegistrationsPage() {
                                             Amount
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            Selected Events
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            UID
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Registration Date
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -173,7 +218,7 @@ export default function RegistrationsPage() {
                                 <tbody className="divide-y divide-gray-200 bg-white">
                                     {registrations.length === 0 ? (
                                         <tr>
-                                            <td colSpan={7} className="py-8 text-center text-sm text-gray-500">
+                                            <td colSpan={9} className="py-8 text-center text-sm text-gray-500">
                                                 No pending registrations found
                                             </td>
                                         </tr>
@@ -194,6 +239,21 @@ export default function RegistrationsPage() {
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     ₹{registration.totalAmount}
+                                                </td>
+                                                <td className="px-3 py-4 text-sm text-gray-500">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {registration.selectedEvents?.map((event, index) => (
+                                                            <span
+                                                                key={index}
+                                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                                            >
+                                                                {event}
+                                                            </span>
+                                                        )) || 'None'}
+                                                    </div>
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                    {registration.uid || 'Not assigned'}
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {formatDate(registration.date)}

@@ -18,7 +18,7 @@ const navigation = [
     { name: 'Spot Registration', href: '/add-participant', icon: UserPlusIcon },
     { name: 'Events', href: '/events', icon: CalendarIcon },
     { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
-    { name: 'Developer', href: '/developer', icon: Cog6ToothIcon },
+    { name: 'Contributer', href: '/developer', icon: Cog6ToothIcon },
 ];
 
 export default function Sidebar() {

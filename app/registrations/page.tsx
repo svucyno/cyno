@@ -63,43 +63,42 @@ export default function RegistrationsPage() {
         setProcessingActions(prev => ({ ...prev, [registration.id]: action }));
 
         try {
-            if (isVerified) {
-                // Try to send email first
-                try {
-                    console.log('Attempting to send verification email to:', registration.email);
-                    const emailData = {
-                        to: registration.email,
-                        name: registration.name,
-                        uid: registration.uid,
-                        events: registration.selectedEvents || []
-                    };
-                    console.log('Email data:', emailData);
+            // Try to send email first (for both verification and rejection)
+            try {
+                console.log(`Attempting to send ${isVerified ? 'verification' : 'rejection'} email to:`, registration.email);
+                const emailData = {
+                    to: registration.email,
+                    name: registration.name,
+                    uid: registration.uid,
+                    events: registration.selectedEvents || [],
+                    isRejected: !isVerified
+                };
+                console.log('Email data:', emailData);
 
-                    const response = await fetch('/api/send-verification', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(emailData),
-                    });
+                const response = await fetch('/api/send-verification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(emailData),
+                });
 
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        console.error('Failed to send verification email:', errorData);
-                        toast.error('Failed to send verification email. Please try again.');
-                        return;
-                    }
-
-                    const responseData = await response.json();
-                    console.log('Email sent successfully:', responseData);
-                } catch (emailError: any) {
-                    console.error('Error sending verification email:', emailError);
-                    toast.error('Failed to send verification email. Please try again.');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Failed to send email:', errorData);
+                    toast.error(`Failed to send ${isVerified ? 'verification' : 'rejection'} email. Please try again.`);
                     return;
                 }
+
+                const responseData = await response.json();
+                console.log('Email sent successfully:', responseData);
+            } catch (emailError: any) {
+                console.error('Error sending email:', emailError);
+                toast.error(`Failed to send ${isVerified ? 'verification' : 'rejection'} email. Please try again.`);
+                return;
             }
 
-            // Proceed with verification only if email was sent successfully
+            // Proceed with verification/rejection only if email was sent successfully
             const targetCollection = isVerified ? 'successRegistrations' : 'failedRegistrations';
             const newDoc = await addDoc(collection(db, targetCollection), {
                 ...registration,
@@ -118,7 +117,7 @@ export default function RegistrationsPage() {
                 reg.paymentId.toLowerCase().includes(searchQuery.toLowerCase())
             ));
 
-            toast.success(`Registration ${isVerified ? 'verified and email sent' : 'rejected'} successfully`);
+            toast.success(`Registration ${isVerified ? 'verified' : 'rejected'} and email sent successfully`);
         } catch (error) {
             console.error('Error processing registration:', error);
             toast.error('Error processing registration');

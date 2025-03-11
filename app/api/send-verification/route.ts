@@ -3,9 +3,9 @@ import nodemailer from 'nodemailer';
 
 export async function POST(req: Request) {
     try {
-        const { to, name, uid, events, isRejected } = await req.json();
+        const { to, name, uid, events, isRejected, isPaper, isIdeathon } = await req.json();
 
-        console.log('Received email request for:', { to, name, uid, isRejected });
+        console.log('Received email request for:', { to, name, uid, isRejected, isPaper, isIdeathon });
 
         // Create transporter with Gmail credentials
         const transporter = nodemailer.createTransport({
@@ -16,27 +16,30 @@ export async function POST(req: Request) {
             }
         });
 
+        // Get submission type for email subject
+        const submissionType = isPaper ? 'Paper Presentation' : isIdeathon ? 'Ideathon' : 'Event Registration';
+
         // Email content based on verification status
         const mailOptions = {
             from: '"CYNOSURE 2025" <svucyno@gmail.com>',
             to: to,
-            subject: isRejected ? 'Registration Update - CYNOSURE 2025' : 'Registration Verification Success - CYNOSURE 2025',
+            subject: isRejected ? `${submissionType} Update - CYNOSURE 2025` : `${submissionType} Verification Success - CYNOSURE 2025`,
             html: isRejected ? `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                     <div style="background: linear-gradient(to right, #dc2626, #b91c1c); padding: 20px; border-radius: 10px 10px 0 0;">
-                        <h1 style="color: white; margin: 0; text-align: center;">Registration Update</h1>
+                        <h1 style="color: white; margin: 0; text-align: center;">${submissionType} Update</h1>
                     </div>
                     
                     <div style="background: white; padding: 20px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <p style="font-size: 16px; color: #374151;">Dear ${name},</p>
                         
-                        <p style="font-size: 16px; color: #374151;">We regret to inform you that your registration for CYNOSURE 2025 could not be verified at this time.</p>
+                        <p style="font-size: 16px; color: #374151;">We regret to inform you that your ${submissionType.toLowerCase()} submission for CYNOSURE 2025 could not be verified at this time.</p>
                         
                         <div style="background: #FEF2F2; padding: 15px; border-radius: 8px; margin: 20px 0;">
                             <p style="margin: 0; color: #991B1B;">Registration ID: <strong>${uid}</strong></p>
                         </div>
                         
-                        <p style="font-size: 16px; color: #374151;">Your registration may have been rejected due to one of the following reasons:</p>
+                        <p style="font-size: 16px; color: #374151;">Your submission may have been rejected due to one of the following reasons:</p>
                         <ul style="color: #374151; margin: 15px 0;">
                             <li style="margin-bottom: 8px;">Incorrect UTR (Transaction Reference) Number provided</li>
                             <li style="margin-bottom: 8px;">Transaction amount does not match the registration fee</li>
@@ -61,21 +64,23 @@ export async function POST(req: Request) {
             ` : `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                     <div style="background: linear-gradient(to right, #2563eb, #4f46e5); padding: 20px; border-radius: 10px 10px 0 0;">
-                        <h1 style="color: white; margin: 0; text-align: center;">Registration Verified</h1>
+                        <h1 style="color: white; margin: 0; text-align: center;">${submissionType} Verified</h1>
                     </div>
                     
                     <div style="background: white; padding: 20px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <p style="font-size: 16px; color: #374151;">Dear ${name},</p>
                         
-                        <p style="font-size: 16px; color: #374151;">Your registration has been successfully verified for the following events:</p>
+                        <p style="font-size: 16px; color: #374151;">Your ${submissionType.toLowerCase()} submission has been successfully verified${events ? ' for the following events:' : '.'}</p>
                         
-                        <ul style="list-style: none; padding: 0;">
-                            ${events.map((event: string) => `
-                                <li style="background: #EFF6FF; color: #1E40AF; padding: 8px 16px; margin: 8px 0; border-radius: 20px; display: inline-block; margin-right: 8px;">
-                                    ${event}
-                                </li>
-                            `).join('')}
-                        </ul>
+                        ${events ? `
+                            <ul style="list-style: none; padding: 0;">
+                                ${events.map((event: string) => `
+                                    <li style="background: #EFF6FF; color: #1E40AF; padding: 8px 16px; margin: 8px 0; border-radius: 20px; display: inline-block; margin-right: 8px;">
+                                        ${event}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        ` : ''}
                         
                         <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                             <p style="margin: 0; color: #374151;">Your Registration ID: <strong>${uid}</strong></p>

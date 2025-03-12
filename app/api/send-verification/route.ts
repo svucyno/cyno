@@ -3,9 +3,9 @@ import nodemailer from 'nodemailer';
 
 export async function POST(req: Request) {
     try {
-        const { to, name, uid, events, isRejected, isPaper, isIdeathon } = await req.json();
+        const { to, name, uid, events, complementaryEvent, teamMembers, isRejected, isPaper, isIdeathon } = await req.json();
 
-        console.log('Received email request for:', { to, name, uid, isRejected, isPaper, isIdeathon });
+        console.log('Received email request for:', { to, name, uid, events, complementaryEvent, teamMembers, isRejected, isPaper, isIdeathon });
 
         // Create transporter with Gmail credentials
         const transporter = nodemailer.createTransport({
@@ -80,6 +80,24 @@ export async function POST(req: Request) {
                                     </li>
                                 `).join('')}
                             </ul>
+                        ` : ''}
+                        
+                        ${complementaryEvent ? `
+                            <p style="font-size: 16px; color: #374151; margin-top: 16px;">Complementary Event:</p>
+                            <div style="display: inline-block; background: #F5F3FF; color: #5B21B6; padding: 8px 16px; border-radius: 20px; margin: 8px 0;">
+                                ${complementaryEvent}
+                            </div>
+                        ` : ''}
+                        
+                        ${isIdeathon && teamMembers && teamMembers.length > 0 ? `
+                            <p style="font-size: 16px; color: #374151; margin-top: 16px;">Team Members:</p>
+                            <div style="margin: 8px 0;">
+                                ${teamMembers.map((member: string) => `
+                                    <span style="display: inline-block; background: #F3F4F6; color: #374151; padding: 8px 16px; border-radius: 20px; margin: 4px 8px 4px 0;">
+                                        ${member}
+                                    </span>
+                                `).join('')}
+                            </div>
                         ` : ''}
                         
                         <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 20px 0;">

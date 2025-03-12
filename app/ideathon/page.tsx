@@ -13,6 +13,7 @@ interface IdeathonSubmission {
     driveLink: string;
     paymentId: string;
     uid: string;
+    teamMembers?: string[];
     status?: 'pending' | 'verified' | 'rejected';
     date: string;
 }
@@ -43,11 +44,17 @@ export default function IdeathonPage() {
     const fetchSubmissions = async () => {
         setLoading(true);
         try {
-            const submissionsSnapshot = await getDocs(collection(db, 'ideathon'));
-            const submissionsData = submissionsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as IdeathonSubmission[];
+            const submissionsSnapshot = await getDocs(collection(db, 'ideathon_registrations'));
+            const submissionsData = submissionsSnapshot.docs.map(doc => {
+                const data = doc.data();
+                console.log('Raw submission data:', data); // Debug log
+                return {
+                    id: doc.id,
+                    ...data,
+                    teamMembers: data.teamMembers ? data.teamMembers.split(',').map((m: string) => m.trim()) : []
+                };
+            }) as IdeathonSubmission[];
+            console.log('Processed submissions:', submissionsData); // Debug log
             setAllSubmissions(submissionsData);
             setSubmissions(submissionsData);
         } catch (error) {
@@ -71,7 +78,8 @@ export default function IdeathonPage() {
                     name: submission.name,
                     uid: submission.uid,
                     isRejected: !isVerified,
-                    isIdeathon: true
+                    isIdeathon: true,
+                    teamMembers: Array.isArray(submission.teamMembers) ? submission.teamMembers : []
                 };
                 console.log('Email data:', emailData);
 
@@ -99,7 +107,7 @@ export default function IdeathonPage() {
             }
 
             // Update submission status
-            await updateDoc(doc(db, 'ideathon', submission.id), {
+            await updateDoc(doc(db, 'ideathon_registrations', submission.id), {
                 status: isVerified ? 'verified' : 'rejected',
                 verifiedAt: new Date().toISOString()
             });
@@ -196,6 +204,9 @@ export default function IdeathonPage() {
                                             Drive Link
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            Team Members
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Payment ID
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -240,6 +251,22 @@ export default function IdeathonPage() {
                                                     >
                                                         View Submission
                                                     </a>
+                                                </td>
+                                                <td className="px-3 py-4 text-sm text-gray-500">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {submission.teamMembers && submission.teamMembers.length > 0 ? (
+                                                            submission.teamMembers.map((member, index) => (
+                                                                <span
+                                                                    key={index}
+                                                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                                                                >
+                                                                    {member}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span className="text-gray-500">No team members</span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {submission.paymentId}

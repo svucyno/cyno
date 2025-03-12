@@ -14,6 +14,7 @@ interface Registration {
     totalAmount: number;
     date: string;
     selectedEvents?: string[];
+    complementaryEvent?: string;
     uid: string;
 }
 
@@ -71,6 +72,7 @@ export default function RegistrationsPage() {
                     name: registration.name,
                     uid: registration.uid,
                     events: registration.selectedEvents || [],
+                    complementaryEvent: registration.complementaryEvent,
                     isRejected: !isVerified
                 };
                 console.log('Email data:', emailData);
@@ -204,6 +206,9 @@ export default function RegistrationsPage() {
                                             Selected Events
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            Complementary Event
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             UID
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -250,6 +255,13 @@ export default function RegistrationsPage() {
                                                             </span>
                                                         )) || 'None'}
                                                     </div>
+                                                </td>
+                                                <td className="px-3 py-4 text-sm text-gray-500">
+                                                    {registration.complementaryEvent ? (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                                            {registration.complementaryEvent}
+                                                        </span>
+                                                    ) : 'None'}
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {registration.uid || 'Not assigned'}

@@ -10,6 +10,7 @@ interface SuccessRegistration {
     name: string;
     email: string;
     mobile: string;
+    complementaryEvent?: string;
     selectedEvents: string[];
     verifiedAt: string;
     paymentId: string;
@@ -209,6 +210,9 @@ export default function SuccessRegistrationsPage() {
                                             Selected Events
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            Complementary Event
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Registration Date
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -246,6 +250,15 @@ export default function SuccessRegistrationsPage() {
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {registration.selectedEvents?.join(', ') || 'None'}
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm">
+                                                    {registration.complementaryEvent ? (
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                            {registration.complementaryEvent}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-500">None</span>
+                                                    )}
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {formatDate(registration.date)}

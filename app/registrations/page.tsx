@@ -262,7 +262,7 @@ export default function RegistrationsPage() {
                             type="text"
                             name="search"
                             id="search"
-                            className="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            className="block w-full rounded-md text-black border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             placeholder="Search by email or mobile number"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}

@@ -49,6 +49,15 @@ export async function POST(req: Request) {
                             <p style="color: #991B1B; font-weight: 500; margin-bottom: 10px;">What should you do next?</p>
                             <p style="color: #374151; margin: 0;">Please verify your UTR number and transaction amount. If you believe there's an error, contact the CYNOSURE team immediately with your payment proof and registration details.</p>
                         </div>
+
+                        <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <p style="color: #374151; font-weight: 500; margin-bottom: 10px;">Join our WhatsApp Group for Support:</p>
+                            <a href="${whatsappLink}" style="display: inline-block; background: #25D366; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500;">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;">
+                                Join ${whatsappGroupName}
+                            </a>
+                            <p style="margin: 10px 0 0 0; font-size: 14px; color: #6B7280;">Get quick support and updates in our WhatsApp group.</p>
+                        </div>
                         
                         <p style="font-size: 16px; color: #374151;">Contact us at:</p>
                         <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 10px 0;">
@@ -102,6 +111,15 @@ export async function POST(req: Request) {
                         
                         <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                             <p style="margin: 0; color: #374151;">Your Registration ID: <strong>${uid}</strong></p>
+                        </div>
+
+                        <div style="background: #F0FDF4; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <p style="color: #166534; font-weight: 500; margin-bottom: 10px;">Stay Updated!</p>
+                            <a href="${whatsappLink}" style="display: inline-block; background: #25D366; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500;">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;">
+                                Join ${whatsappGroupName}
+                            </a>
+                            <p style="margin: 10px 0 0 0; font-size: 14px; color: #166534;">Join our WhatsApp group for important updates and announcements.</p>
                         </div>
                         
                         <p style="font-size: 16px; color: #374151;">Please keep this ID for future reference. You'll need it during the events.</p>

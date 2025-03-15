@@ -3,9 +3,9 @@ import nodemailer from 'nodemailer';
 
 export async function POST(req: Request) {
     try {
-        const { to, name, uid, events, complementaryEvent, teamMembers, isRejected, isPaper, isIdeathon } = await req.json();
+        const { to, name, uid, events, complementaryEvent, teamMembers, isRejected, isPaper, isIdeathon, whatsappLink, whatsappGroupName } = await req.json();
 
-        console.log('Received email request for:', { to, name, uid, events, complementaryEvent, teamMembers, isRejected, isPaper, isIdeathon });
+        console.log('Received email request for:', { to, name, uid, events, complementaryEvent, teamMembers, isRejected, isPaper, isIdeathon, whatsappLink, whatsappGroupName });
 
         // Create transporter with Gmail credentials
         const transporter = nodemailer.createTransport({

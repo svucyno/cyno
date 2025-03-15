@@ -78,7 +78,11 @@ export default function RegistrationsPage() {
                     uid: registration.uid,
                     events: registration.selectedEvents || [],
                     complementaryEvent: registration.complementaryEvent,
-                    isRejected: !isVerified
+                    isRejected: !isVerified,
+                    whatsappLink: isVerified
+                        ? 'https://chat.whatsapp.com/LPZ2D9fqcIEHWNg6LOUJVp'  // Announcements group for verified
+                        : 'https://chat.whatsapp.com/KxGOfKz0QddLdDE3oD4fuL',  // Queries group for rejected
+                    whatsappGroupName: isVerified ? 'BMS Announcements' : 'BMS Queries'
                 };
                 console.log('Email data:', emailData);
 
@@ -172,7 +176,7 @@ export default function RegistrationsPage() {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border text-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Enter password"
                         onKeyPress={(e) => {
                             if (e.key === 'Enter') {

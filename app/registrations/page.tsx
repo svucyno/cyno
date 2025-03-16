@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { toast } from 'react-toastify';
+import ProtectedRoute from '../components/ProtectedRoute';
 
 interface Registration {
     id: string;
@@ -18,17 +19,13 @@ interface Registration {
     uid: string;
 }
 
-export default function RegistrationsPage() {
+function RegistrationsContent() {
     const [registrations, setRegistrations] = useState<Registration[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [processingActions, setProcessingActions] = useState<{ [key: string]: 'verify' | 'reject' | null }>({});
     const [searchQuery, setSearchQuery] = useState('');
     const [allRegistrations, setAllRegistrations] = useState<Registration[]>([]);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [password, setPassword] = useState('');
-    const [showPasswordModal, setShowPasswordModal] = useState(true);
 
     useEffect(() => {
         fetchRegistrations();
@@ -144,60 +141,12 @@ export default function RegistrationsPage() {
         return date.toLocaleDateString();
     };
 
-    const handlePasswordSubmit = () => {
-        if (password === 'bms123') {
-            setIsAuthenticated(true);
-            setIsAdmin(false);
-            setShowPasswordModal(false);
-            toast.success('Logged in as regular user');
-        } else if (password === 'bhanuwebdev') {
-            setIsAuthenticated(true);
-            setIsAdmin(true);
-            setShowPasswordModal(false);
-            toast.success('Logged in as admin');
-        } else {
-            toast.error('Invalid password');
-        }
-    };
-
     const handleRefresh = async () => {
         setRefreshing(true);
         await fetchRegistrations();
         setRefreshing(false);
         toast.success('Records refreshed successfully');
     };
-
-    if (showPasswordModal) {
-        return (
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-                <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
-                    <h2 className="text-2xl font-bold mb-4 text-gray-900">Enter Password</h2>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 border text-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter password"
-                        onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                                handlePasswordSubmit();
-                            }
-                        }}
-                    />
-                    <button
-                        onClick={handlePasswordSubmit}
-                        className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                        Submit
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    if (!isAuthenticated) {
-        return null;
-    }
 
     if (loading) {
         return (
@@ -219,7 +168,7 @@ export default function RegistrationsPage() {
                         A list of all registrations and their verification status.
                     </p>
                 </div>
-                <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex space-x-4">
+                <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}
@@ -242,16 +191,9 @@ export default function RegistrationsPage() {
                             </>
                         )}
                     </button>
-                    <button
-                        onClick={() => setShowPasswordModal(true)}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                    >
-                        Change User
-                    </button>
                 </div>
             </div>
 
-            {/* Search Bar */}
             <div className="mb-6">
                 <div className="max-w-xl">
                     <label htmlFor="search" className="block text-sm font-medium text-gray-700">
@@ -262,8 +204,8 @@ export default function RegistrationsPage() {
                             type="text"
                             name="search"
                             id="search"
-                            className="block w-full rounded-md text-black border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            placeholder="Search by email or mobile number"
+                            className="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            placeholder="Search by payment ID"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -276,7 +218,6 @@ export default function RegistrationsPage() {
                 </div>
             </div>
 
-            {/* Table */}
             <div className="mt-8 flex flex-col">
                 <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                     <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
@@ -291,7 +232,7 @@ export default function RegistrationsPage() {
                                             Email
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            Phone
+                                            Mobile
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Payment ID
@@ -300,28 +241,23 @@ export default function RegistrationsPage() {
                                             Amount
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            Selected Events
+                                            Events
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Complementary Event
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            UID
+                                            Date
                                         </th>
-                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            Registration Date
+                                        <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                                            <span className="sr-only">Actions</span>
                                         </th>
-                                        {isAdmin && (
-                                            <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                                                <span className="sr-only">Actions</span>
-                                            </th>
-                                        )}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
                                     {registrations.length === 0 ? (
                                         <tr>
-                                            <td colSpan={isAdmin ? 10 : 9} className="py-8 text-center text-sm text-gray-500">
+                                            <td colSpan={9} className="py-8 text-center text-sm text-gray-500">
                                                 No registrations found
                                             </td>
                                         </tr>
@@ -345,61 +281,48 @@ export default function RegistrationsPage() {
                                                 </td>
                                                 <td className="px-3 py-4 text-sm text-gray-500">
                                                     <div className="flex flex-wrap gap-1">
-                                                        {Array.isArray(registration.selectedEvents) && registration.selectedEvents.length > 0 ? (
-                                                            registration.selectedEvents.map((event, index) => (
-                                                                <span
-                                                                    key={index}
-                                                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                                                                >
-                                                                    {event}
-                                                                </span>
-                                                            ))
-                                                        ) : (
-                                                            <span>None</span>
-                                                        )}
+                                                        {registration.selectedEvents?.map((event, index) => (
+                                                            <span
+                                                                key={index}
+                                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                                            >
+                                                                {event}
+                                                            </span>
+                                                        ))}
                                                     </div>
                                                 </td>
-                                                <td className="px-3 py-4 text-sm text-gray-500">
-                                                    {registration.complementaryEvent ? (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                                            {registration.complementaryEvent}
-                                                        </span>
-                                                    ) : 'None'}
-                                                </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                    {registration.uid || 'Not assigned'}
+                                                    {registration.complementaryEvent || 'None'}
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {formatDate(registration.date)}
                                                 </td>
-                                                {isAdmin && (
-                                                    <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                                        <div className="flex space-x-2">
-                                                            <button
-                                                                onClick={() => handleVerification(registration, true)}
-                                                                disabled={!!processingActions[registration.id]}
-                                                                className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${processingActions[registration.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                            >
-                                                                {processingActions[registration.id] === 'verify' ? (
-                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                                ) : (
-                                                                    'Verify'
-                                                                )}
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleVerification(registration, false)}
-                                                                disabled={!!processingActions[registration.id]}
-                                                                className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${processingActions[registration.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                            >
-                                                                {processingActions[registration.id] === 'reject' ? (
-                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                                ) : (
-                                                                    'Reject'
-                                                                )}
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                )}
+                                                <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                                    <div className="flex space-x-2">
+                                                        <button
+                                                            onClick={() => handleVerification(registration, true)}
+                                                            disabled={!!processingActions[registration.id]}
+                                                            className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${processingActions[registration.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        >
+                                                            {processingActions[registration.id] === 'verify' ? (
+                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                            ) : (
+                                                                'Verify'
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleVerification(registration, false)}
+                                                            disabled={!!processingActions[registration.id]}
+                                                            className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${processingActions[registration.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        >
+                                                            {processingActions[registration.id] === 'reject' ? (
+                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                            ) : (
+                                                                'Reject'
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))
                                     )}
@@ -410,5 +333,13 @@ export default function RegistrationsPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function RegistrationsPage() {
+    return (
+        <ProtectedRoute>
+            <RegistrationsContent />
+        </ProtectedRoute>
     );
 } 

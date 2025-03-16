@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { toast } from 'react-toastify';
+import ProtectedRoute from '../components/ProtectedRoute';
 
 interface IdeathonSubmission {
     id: string;
@@ -18,9 +19,10 @@ interface IdeathonSubmission {
     date: string;
 }
 
-export default function IdeathonPage() {
+function IdeathonContent() {
     const [submissions, setSubmissions] = useState<IdeathonSubmission[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [processingActions, setProcessingActions] = useState<{ [key: string]: 'verify' | 'reject' | null }>({});
     const [searchQuery, setSearchQuery] = useState('');
     const [allSubmissions, setAllSubmissions] = useState<IdeathonSubmission[]>([]);
@@ -325,5 +327,13 @@ export default function IdeathonPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function IdeathonPage() {
+    return (
+        <ProtectedRoute>
+            <IdeathonContent />
+        </ProtectedRoute>
     );
 } 

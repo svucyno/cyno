@@ -1,30 +1,32 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { toast } from 'react-toastify';
 import ProtectedRoute from '../components/ProtectedRoute';
 
-interface PaperSubmission {
+interface HackathonSubmission {
     id: string;
-    name: string;
-    email: string;
+    teamName: string;
+    problemStatement: string;
+    leaderName: string;
+    members: string[];
+    membersEmail: string[];
     mobile: string;
-    driveLink: string;
+    accommodation: boolean;
     paymentId: string;
     status: 'pending' | 'verified' | 'rejected';
     date: string;
-    teamMembers?: string[];
 }
 
-function PaperPresentationContent() {
-    const [submissions, setSubmissions] = useState<PaperSubmission[]>([]);
+function HackathonContent() {
+    const [submissions, setSubmissions] = useState<HackathonSubmission[]>([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [processingActions, setProcessingActions] = useState<{ [key: string]: 'verify' | 'reject' | null }>({});
     const [searchQuery, setSearchQuery] = useState('');
-    const [allSubmissions, setAllSubmissions] = useState<PaperSubmission[]>([]);
+    const [allSubmissions, setAllSubmissions] = useState<HackathonSubmission[]>([]);
+    const [processingActions, setProcessingActions] = useState<{ [key: string]: 'verify' | 'reject' | null }>({});
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         fetchSubmissions();
@@ -32,8 +34,11 @@ function PaperPresentationContent() {
 
     useEffect(() => {
         if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
             const filtered = allSubmissions.filter(submission =>
-                submission.paymentId.toLowerCase().includes(searchQuery.toLowerCase())
+                submission.teamName.toLowerCase().includes(query) ||
+                submission.leaderName.toLowerCase().includes(query) ||
+                submission.mobile.toLowerCase().includes(query)
             );
             setSubmissions(filtered);
         } else {
@@ -41,14 +46,23 @@ function PaperPresentationContent() {
         }
     }, [searchQuery, allSubmissions]);
 
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await fetchSubmissions();
+        setRefreshing(false);
+        toast.success('Records refreshed successfully');
+    };
+
     const fetchSubmissions = async () => {
         setLoading(true);
         try {
-            const submissionsSnapshot = await getDocs(collection(db, 'paperPresentationSubmissions'));
+            const submissionsSnapshot = await getDocs(collection(db, 'hackathonSubmissions'));
             const submissionsData = submissionsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
-            })) as PaperSubmission[];
+            })) as HackathonSubmission[];
+
+            console.log('Fetched submissions:', submissionsData);
             setAllSubmissions(submissionsData);
             setSubmissions(submissionsData);
         } catch (error) {
@@ -59,7 +73,7 @@ function PaperPresentationContent() {
         }
     };
 
-    const handleVerification = async (submission: PaperSubmission, isVerified: boolean) => {
+    const handleVerification = async (submission: HackathonSubmission, isVerified: boolean) => {
         const action = isVerified ? 'verify' : 'reject';
         setProcessingActions(prev => ({ ...prev, [submission.id]: action }));
 
@@ -67,12 +81,12 @@ function PaperPresentationContent() {
             // Send email first
             try {
                 const emailData = {
-                    to: submission.email,
-                    name: submission.name,
+                    to: submission.membersEmail[0],
+                    name: submission.leaderName,
                     uid: submission.id,
                     isRejected: !isVerified,
-                    teamMembers: submission.teamMembers,
-                    isPaperPresentation: true,
+                    teamMembers: submission.members,
+                    isHackathon: true,
                     whatsappLink: isVerified
                         ? 'https://chat.whatsapp.com/LPZ2D9fqcIEHWNg6LOUJVp'
                         : 'https://chat.whatsapp.com/KxGOfKz0QddLdDE3oD4fuL',
@@ -97,22 +111,26 @@ function PaperPresentationContent() {
             }
 
             // Update submission status
-            const targetCollection = isVerified ? 'successPaperPresentations' : 'failedPaperPresentations';
-            await addDoc(collection(db, targetCollection), {
-                ...submission,
-                status: isVerified ? 'verified' : 'rejected',
-                verifiedAt: new Date().toISOString()
+            const submissionRef = doc(db, 'hackathonSubmissions', submission.id);
+            await updateDoc(submissionRef, {
+                status: isVerified ? 'verified' : 'rejected'
             });
 
-            // Remove from submissions collection
-            await deleteDoc(doc(db, 'paperPresentationSubmissions', submission.id));
-
             // Update local state
-            const updatedSubmissions = allSubmissions.filter(s => s.id !== submission.id);
-            setAllSubmissions(updatedSubmissions);
-            setSubmissions(updatedSubmissions.filter(s =>
-                s.paymentId.toLowerCase().includes(searchQuery.toLowerCase())
-            ));
+            setSubmissions(prev =>
+                prev.map(s =>
+                    s.id === submission.id
+                        ? { ...s, status: isVerified ? 'verified' : 'rejected' }
+                        : s
+                )
+            );
+            setAllSubmissions(prev =>
+                prev.map(s =>
+                    s.id === submission.id
+                        ? { ...s, status: isVerified ? 'verified' : 'rejected' }
+                        : s
+                )
+            );
 
             toast.success(`Submission ${isVerified ? 'verified' : 'rejected'} successfully`);
         } catch (error) {
@@ -123,11 +141,10 @@ function PaperPresentationContent() {
         }
     };
 
-    const handleRefresh = async () => {
-        setRefreshing(true);
-        await fetchSubmissions();
-        setRefreshing(false);
-        toast.success('Records refreshed successfully');
+    const formatDate = (timestamp: any) => {
+        if (!timestamp) return 'N/A';
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toLocaleDateString();
     };
 
     if (loading) {
@@ -135,7 +152,7 @@ function PaperPresentationContent() {
             <div className="flex justify-center items-center min-h-[600px]">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-500">Loading submissions...</p>
+                    <p className="text-gray-500">Loading hackathon submissions...</p>
                 </div>
             </div>
         );
@@ -145,9 +162,9 @@ function PaperPresentationContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="sm:flex sm:items-center mb-6">
                 <div className="sm:flex-auto">
-                    <h1 className="text-2xl font-semibold text-gray-900">Paper Presentation Submissions</h1>
+                    <h1 className="text-2xl font-semibold text-gray-900">Hackathon Submissions</h1>
                     <p className="mt-2 text-sm text-gray-700">
-                        A list of all paper presentation submissions and their verification status.
+                        A list of all hackathon submissions and their verification status.
                     </p>
                 </div>
                 <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
@@ -187,7 +204,7 @@ function PaperPresentationContent() {
                             name="search"
                             id="search"
                             className="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            placeholder="Search by payment ID"
+                            placeholder="Search by team name, leader name or mobile"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -208,25 +225,34 @@ function PaperPresentationContent() {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                                            Name
+                                            Team Name
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            Email
+                                            Problem Statement
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            Leader Name
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            Members
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            Members Email
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Mobile
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            Drive Link
+                                            Accommodation
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Payment ID
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            Team Members
+                                            Status
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            Date
+                                            Submission Date
                                         </th>
                                         <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
                                             <span className="sr-only">Actions</span>
@@ -236,49 +262,82 @@ function PaperPresentationContent() {
                                 <tbody className="divide-y divide-gray-200 bg-white">
                                     {submissions.length === 0 ? (
                                         <tr>
-                                            <td colSpan={8} className="py-8 text-center text-sm text-gray-500">
-                                                No submissions found
+                                            <td colSpan={11} className="py-8 text-center text-sm text-gray-500">
+                                                No hackathon submissions found
                                             </td>
                                         </tr>
                                     ) : (
                                         submissions.map((submission) => (
                                             <tr key={submission.id}>
                                                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                                                    {submission.name}
+                                                    {submission.teamName}
+                                                </td>
+                                                <td className="px-3 py-4 text-sm text-gray-500">
+                                                    <div className="max-w-xs overflow-hidden">
+                                                        {submission.problemStatement}
+                                                    </div>
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                    {submission.email}
+                                                    {submission.leaderName}
+                                                </td>
+                                                <td className="px-3 py-4 text-sm text-gray-500">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {Array.isArray(submission.members) && submission.members.length > 0 ? (
+                                                            submission.members.map((member, index) => (
+                                                                <span
+                                                                    key={index}
+                                                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                                                >
+                                                                    {member}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span>No members</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-4 text-sm text-gray-500">
+                                                    <div className="flex flex-col gap-1">
+                                                        {Array.isArray(submission.membersEmail) && submission.membersEmail.length > 0 ? (
+                                                            submission.membersEmail.map((email, index) => (
+                                                                <span
+                                                                    key={index}
+                                                                    className="inline-block text-xs"
+                                                                >
+                                                                    {email}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span>No emails</span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {submission.mobile}
                                                 </td>
-                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                    <a
-                                                        href={submission.driveLink}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-600 hover:text-blue-800"
-                                                    >
-                                                        View Paper
-                                                    </a>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${submission.accommodation
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-gray-100 text-gray-800'
+                                                        }`}>
+                                                        {submission.accommodation ? 'Yes' : 'No'}
+                                                    </span>
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {submission.paymentId}
                                                 </td>
-                                                <td className="px-3 py-4 text-sm text-gray-500">
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {submission.teamMembers?.map((member, index) => (
-                                                            <span
-                                                                key={index}
-                                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                                                            >
-                                                                {member}
-                                                            </span>
-                                                        ))}
-                                                    </div>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${submission.status === 'verified'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : submission.status === 'rejected'
+                                                            ? 'bg-red-100 text-red-800'
+                                                            : 'bg-yellow-100 text-yellow-800'
+                                                        }`}>
+                                                        {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                                                    </span>
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                    {new Date(submission.date).toLocaleDateString()}
+                                                    {formatDate(submission.date)}
                                                 </td>
                                                 <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                                                     <div className="flex space-x-2">
@@ -319,10 +378,10 @@ function PaperPresentationContent() {
     );
 }
 
-export default function PaperPresentationPage() {
+export default function HackathonPage() {
     return (
         <ProtectedRoute>
-            <PaperPresentationContent />
+            <HackathonContent />
         </ProtectedRoute>
     );
 } 

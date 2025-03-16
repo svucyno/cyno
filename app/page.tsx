@@ -97,7 +97,7 @@ function DashboardContent() {
   const handleSignOut = async () => {
     try {
       await logout();
-      router.push('/signin');
+      window.location.href = window.location.origin;
     } catch (error) {
       console.error('Error signing out:', error);
     }

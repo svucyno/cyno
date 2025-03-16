@@ -9,15 +9,21 @@ import ProtectedRoute from '../components/ProtectedRoute';
 interface HackathonSubmission {
     id: string;
     teamName: string;
-    problemStatement: string;
+    problemStatement?: string;
     leaderName: string;
     members: string[];
-    membersEmail: string[];
+    teamMembers?: string[];
+    email: string;
+    membersEmail?: string[];
     mobile: string;
-    accommodation: boolean;
+    accommodation: string | boolean;
     paymentId: string;
-    status: 'pending' | 'verified' | 'rejected';
+    status: 'pending' | 'verified' | 'rejected' | string;
     date: string;
+    teamSize?: string;
+    totalAmount?: number;
+    uid?: string;
+    name?: string;
 }
 
 function HackathonContent() {
@@ -56,13 +62,62 @@ function HackathonContent() {
     const fetchSubmissions = async () => {
         setLoading(true);
         try {
-            const submissionsSnapshot = await getDocs(collection(db, 'hackathonSubmissions'));
-            const submissionsData = submissionsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as HackathonSubmission[];
+            const submissionsSnapshot = await getDocs(collection(db, 'hackathon_registrations'));
+            const submissionsData = submissionsSnapshot.docs.map(doc => {
+                const data = doc.data();
+                console.log('Raw submission data:', data);
 
-            console.log('Fetched submissions:', submissionsData);
+                // Process team members
+                let members = data.members || data.teamMembers || [];
+                if (!Array.isArray(members)) {
+                    if (typeof members === 'string') {
+                        members = members.split(',').map(m => m.trim());
+                    } else {
+                        members = [];
+                    }
+                }
+
+                // Get leader name from teamMembers array (first member is leader)
+                const leaderName = (Array.isArray(data.teamMembers) && data.teamMembers.length > 0)
+                    ? data.teamMembers[0]
+                    : data.leaderName || data.name || '';
+
+                // Ensure we have the primary email
+                const email = data.email || '';
+
+                // Process members email (if available) for backward compatibility
+                let membersEmail = data.membersEmail || [];
+                if (!Array.isArray(membersEmail)) {
+                    if (typeof membersEmail === 'string') {
+                        membersEmail = membersEmail.split(',').map(e => e.trim());
+                    } else {
+                        membersEmail = [];
+                    }
+                }
+
+                // Normalize accommodation value
+                let accommodation = data.accommodation;
+                if (typeof accommodation === 'string') {
+                    accommodation = accommodation.toLowerCase() === 'yes' || accommodation.toLowerCase() === 'true';
+                }
+
+                return {
+                    id: doc.id,
+                    ...data,
+                    members: members,
+                    teamMembers: data.teamMembers || members, // Keep both for compatibility
+                    email: email,
+                    membersEmail,
+                    leaderName,
+                    accommodation,
+                    // Ensure status has a default value
+                    status: data.status || 'pending',
+                    // Use teamName from data or create from team leader name
+                    teamName: data.teamName || `${leaderName}'s Team`
+                };
+            }) as HackathonSubmission[];
+
+            console.log('Processed submissions:', submissionsData);
             setAllSubmissions(submissionsData);
             setSubmissions(submissionsData);
         } catch (error) {
@@ -80,19 +135,27 @@ function HackathonContent() {
         try {
             // Send email first
             try {
+                const teamMembers = submission.teamMembers || submission.members || [];
+
+                // Prepare email data
                 const emailData = {
-                    to: submission.membersEmail[0],
-                    name: submission.leaderName,
+                    to: submission.email || '',
+                    name: submission.leaderName || (teamMembers.length > 0 ? teamMembers[0] : ''),
                     uid: submission.id,
                     isRejected: !isVerified,
-                    teamMembers: submission.members,
+                    teamMembers: teamMembers,
                     isHackathon: true,
+                    problemStatement: submission.problemStatement || '',
+                    teamName: submission.teamName || '',
                     whatsappLink: isVerified
                         ? 'https://chat.whatsapp.com/LPZ2D9fqcIEHWNg6LOUJVp'
                         : 'https://chat.whatsapp.com/KxGOfKz0QddLdDE3oD4fuL',
                     whatsappGroupName: isVerified ? 'BMS Announcements' : 'BMS Queries'
                 };
 
+                console.log('Sending email with data:', emailData);
+
+                // Send the email
                 const response = await fetch('/api/send-verification', {
                     method: 'POST',
                     headers: {
@@ -101,17 +164,23 @@ function HackathonContent() {
                     body: JSON.stringify(emailData),
                 });
 
+                // Check response
+                const responseData = await response.json();
+
                 if (!response.ok) {
-                    throw new Error('Failed to send email');
+                    console.error('Email API error:', responseData);
+                    throw new Error(responseData.error || 'Failed to send email');
                 }
+
+                console.log('Email sent successfully:', responseData);
             } catch (emailError) {
                 console.error('Error sending email:', emailError);
-                toast.error('Failed to send verification email');
+                toast.error(`Failed to send verification email: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`);
                 return;
             }
 
             // Update submission status
-            const submissionRef = doc(db, 'hackathonSubmissions', submission.id);
+            const submissionRef = doc(db, 'hackathon_registrations', submission.id);
             await updateDoc(submissionRef, {
                 status: isVerified ? 'verified' : 'rejected'
             });
@@ -135,7 +204,7 @@ function HackathonContent() {
             toast.success(`Submission ${isVerified ? 'verified' : 'rejected'} successfully`);
         } catch (error) {
             console.error('Error updating submission:', error);
-            toast.error('Error updating submission status');
+            toast.error(`Error updating submission status: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setProcessingActions(prev => ({ ...prev, [submission.id]: null }));
         }
@@ -203,7 +272,7 @@ function HackathonContent() {
                             type="text"
                             name="search"
                             id="search"
-                            className="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            className="block w-full rounded-md text-black border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             placeholder="Search by team name, leader name or mobile"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -234,10 +303,10 @@ function HackathonContent() {
                                             Leader Name
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            Members
+                                            Team Members
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                            Members Email
+                                            Email
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Mobile
@@ -282,13 +351,16 @@ function HackathonContent() {
                                                 </td>
                                                 <td className="px-3 py-4 text-sm text-gray-500">
                                                     <div className="flex flex-wrap gap-1">
-                                                        {Array.isArray(submission.members) && submission.members.length > 0 ? (
-                                                            submission.members.map((member, index) => (
+                                                        {(submission.teamMembers || submission.members || []).length > 0 ? (
+                                                            (submission.teamMembers || submission.members).map((member, index) => (
                                                                 <span
                                                                     key={index}
-                                                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                                                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${index === 0
+                                                                        ? 'bg-indigo-100 text-indigo-800' // First member (leader) gets different styling
+                                                                        : 'bg-blue-100 text-blue-800'
+                                                                        }`}
                                                                 >
-                                                                    {member}
+                                                                    {index === 0 ? '👑 ' : ''}{member}
                                                                 </span>
                                                             ))
                                                         ) : (
@@ -297,20 +369,7 @@ function HackathonContent() {
                                                     </div>
                                                 </td>
                                                 <td className="px-3 py-4 text-sm text-gray-500">
-                                                    <div className="flex flex-col gap-1">
-                                                        {Array.isArray(submission.membersEmail) && submission.membersEmail.length > 0 ? (
-                                                            submission.membersEmail.map((email, index) => (
-                                                                <span
-                                                                    key={index}
-                                                                    className="inline-block text-xs"
-                                                                >
-                                                                    {email}
-                                                                </span>
-                                                            ))
-                                                        ) : (
-                                                            <span>No emails</span>
-                                                        )}
-                                                    </div>
+                                                    {submission.email}
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {submission.mobile}
@@ -333,7 +392,9 @@ function HackathonContent() {
                                                             ? 'bg-red-100 text-red-800'
                                                             : 'bg-yellow-100 text-yellow-800'
                                                         }`}>
-                                                        {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                                                        {submission.status && typeof submission.status === 'string'
+                                                            ? submission.status.charAt(0).toUpperCase() + submission.status.slice(1)
+                                                            : 'Pending'}
                                                     </span>
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">

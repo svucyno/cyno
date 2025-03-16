@@ -3,9 +3,39 @@ import nodemailer from 'nodemailer';
 
 export async function POST(req: Request) {
     try {
-        const { to, name, uid, events, complementaryEvent, teamMembers, isRejected, isPaper, isIdeathon, whatsappLink, whatsappGroupName } = await req.json();
+        const { 
+            to, 
+            name, 
+            uid, 
+            events, 
+            complementaryEvent, 
+            teamMembers, 
+            isRejected, 
+            isPaper, 
+            isIdeathon, 
+            isHackathon, 
+            whatsappLink, 
+            whatsappGroupName, 
+            teamName, 
+            problemStatement 
+        } = await req.json();
 
-        console.log('Received email request for:', { to, name, uid, events, complementaryEvent, teamMembers, isRejected, isPaper, isIdeathon, whatsappLink, whatsappGroupName });
+        console.log('Received email request for:', { 
+            to, 
+            name, 
+            uid, 
+            events, 
+            complementaryEvent, 
+            teamMembers, 
+            isRejected, 
+            isPaper, 
+            isIdeathon, 
+            isHackathon, 
+            whatsappLink, 
+            whatsappGroupName,
+            teamName,
+            problemStatement
+        });
 
         // Create transporter with Gmail credentials
         const transporter = nodemailer.createTransport({
@@ -17,7 +47,7 @@ export async function POST(req: Request) {
         });
 
         // Get submission type for email subject
-        const submissionType = isPaper ? 'Paper Presentation' : isIdeathon ? 'Ideathon' : 'Event Registration';
+        const submissionType = isPaper ? 'Paper Presentation' : isIdeathon ? 'Ideathon' : isHackathon ? 'Hackathon' : 'Event Registration';
 
         // Email content based on verification status
         const mailOptions = {
@@ -106,6 +136,24 @@ export async function POST(req: Request) {
                                         ${member}
                                     </span>
                                 `).join('')}
+                            </div>
+                        ` : ''}
+                        
+                        ${isHackathon ? `
+                            <div style="background: #ECFDF5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                                <p style="color: #065F46; font-weight: 500; margin-bottom: 10px;">Hackathon Details:</p>
+                                <p style="margin: 0 0 8px 0; color: #374151;"><strong>Team:</strong> ${teamName || 'Team'}</p>
+                                <p style="margin: 0 0 8px 0; color: #374151;"><strong>Problem Statement:</strong> ${problemStatement || 'To be worked on during the event'}</p>
+                                ${teamMembers && teamMembers.length > 0 ? `
+                                    <p style="margin: 0 0 8px 0; color: #374151;"><strong>Team Members:</strong></p>
+                                    <div style="margin: 8px 0;">
+                                        ${teamMembers.map((member: string, index: number) => `
+                                            <span style="display: inline-block; background: ${index === 0 ? '#D1FAE5' : '#F3F4F6'}; color: ${index === 0 ? '#065F46' : '#374151'}; padding: 8px 16px; border-radius: 20px; margin: 4px 8px 4px 0;">
+                                                ${index === 0 ? '👑 ' : ''}${member}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
                             </div>
                         ` : ''}
                         

@@ -1,7 +1,6 @@
 'use client';
 
 import Sidebar from './Sidebar';
-import Header from './Header';
 import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from "../context/AuthContext";
 import ProtectedRoute from './ProtectedRoute';

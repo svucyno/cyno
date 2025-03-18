@@ -24,6 +24,7 @@ interface HackathonSubmission {
     totalAmount?: number;
     uid?: string;
     name?: string;
+    collegeName?: string;
 }
 
 function HackathonContent() {
@@ -113,7 +114,9 @@ function HackathonContent() {
                     // Ensure status has a default value
                     status: data.status || 'pending',
                     // Use teamName from data or create from team leader name
-                    teamName: data.teamName || `${leaderName}'s Team`
+                    teamName: data.teamName || `${leaderName}'s Team`,
+                    // Include college name
+                    collegeName: data.collegeName || 'N/A'
                 };
             }) as HackathonSubmission[];
 
@@ -318,6 +321,9 @@ function HackathonContent() {
                                             Payment ID
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            College Name
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Status
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -384,6 +390,9 @@ function HackathonContent() {
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {submission.paymentId}
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                    {submission.collegeName || 'N/A'}
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${submission.status === 'verified'

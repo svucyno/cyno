@@ -50,9 +50,9 @@ function DashboardContent() {
       const registrationsSnapshot = await getDocs(collection(db, 'registrations'));
       const successRegistrationsSnapshot = await getDocs(collection(db, 'successRegistrations'));
       const failedRegistrationsSnapshot = await getDocs(collection(db, 'failedRegistrations'));
-      const hackathonSnapshot = await getDocs(collection(db, 'hackathonSubmissions'));
-      const ideathonSnapshot = await getDocs(collection(db, 'ideathonSubmissions'));
-      const paperSnapshot = await getDocs(collection(db, 'paperPresentationSubmissions'));
+      const hackathonSnapshot = await getDocs(collection(db, 'hackathon_registrations'));
+      const ideathonSnapshot = await getDocs(collection(db, 'ideathon_registrations'));
+      const paperSnapshot = await getDocs(collection(db, 'paper_presentations'));
 
       setStats({
         totalRegistrations: registrationsSnapshot.size + successRegistrationsSnapshot.size + failedRegistrationsSnapshot.size,

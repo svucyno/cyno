@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { toast } from 'react-toastify';
 import ProtectedRoute from '../components/ProtectedRoute';
@@ -16,6 +16,7 @@ interface PaperSubmission {
     status: 'pending' | 'verified' | 'rejected';
     date: string;
     teamMembers?: string[];
+    collegeName?: string;
 }
 
 function PaperPresentationContent() {
@@ -44,7 +45,7 @@ function PaperPresentationContent() {
     const fetchSubmissions = async () => {
         setLoading(true);
         try {
-            const submissionsSnapshot = await getDocs(collection(db, 'paperPresentationSubmissions'));
+            const submissionsSnapshot = await getDocs(collection(db, 'paper_presentations'));
             const submissionsData = submissionsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -96,28 +97,27 @@ function PaperPresentationContent() {
                 return;
             }
 
-            // Update submission status
-            const targetCollection = isVerified ? 'successPaperPresentations' : 'failedPaperPresentations';
-            await addDoc(collection(db, targetCollection), {
-                ...submission,
+            // Update submission status in the same collection
+            await updateDoc(doc(db, 'paper_presentations', submission.id), {
                 status: isVerified ? 'verified' : 'rejected',
                 verifiedAt: new Date().toISOString()
             });
 
-            // Remove from submissions collection
-            await deleteDoc(doc(db, 'paperPresentationSubmissions', submission.id));
-
             // Update local state
-            const updatedSubmissions = allSubmissions.filter(s => s.id !== submission.id);
+            const updatedSubmissions = allSubmissions.map(sub =>
+                sub.id === submission.id
+                    ? { ...sub, status: isVerified ? 'verified' : 'rejected' as 'verified' | 'rejected' }
+                    : sub
+            );
             setAllSubmissions(updatedSubmissions);
-            setSubmissions(updatedSubmissions.filter(s =>
-                s.paymentId.toLowerCase().includes(searchQuery.toLowerCase())
+            setSubmissions(updatedSubmissions.filter(sub =>
+                sub.paymentId.toLowerCase().includes(searchQuery.toLowerCase())
             ));
 
-            toast.success(`Submission ${isVerified ? 'verified' : 'rejected'} successfully`);
+            toast.success(`Submission ${isVerified ? 'verified' : 'rejected'} and email sent successfully`);
         } catch (error) {
-            console.error('Error updating submission:', error);
-            toast.error('Error updating submission status');
+            console.error('Error processing submission:', error);
+            toast.error('Error processing submission');
         } finally {
             setProcessingActions(prev => ({ ...prev, [submission.id]: null }));
         }
@@ -223,6 +223,9 @@ function PaperPresentationContent() {
                                             Payment ID
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            College Name
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Team Members
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -265,17 +268,11 @@ function PaperPresentationContent() {
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {submission.paymentId}
                                                 </td>
-                                                <td className="px-3 py-4 text-sm text-gray-500">
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {submission.teamMembers?.map((member, index) => (
-                                                            <span
-                                                                key={index}
-                                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                                                            >
-                                                                {member}
-                                                            </span>
-                                                        ))}
-                                                    </div>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                    {submission.collegeName || 'N/A'}
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                    {submission.teamMembers?.join(', ') || 'None'}
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {new Date(submission.date).toLocaleDateString()}

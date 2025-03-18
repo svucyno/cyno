@@ -18,6 +18,7 @@ interface SuccessRegistration {
     date: string;
     createdAt: string;
     uid?: string;
+    collegeName?: string;
 }
 
 export default function SuccessRegistrationsPage() {
@@ -204,6 +205,9 @@ export default function SuccessRegistrationsPage() {
                                             Payment ID
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            College Name
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Amount
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -244,6 +248,9 @@ export default function SuccessRegistrationsPage() {
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {registration.paymentId}
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                    {registration.collegeName || 'N/A'}
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     ₹{registration.totalAmount}

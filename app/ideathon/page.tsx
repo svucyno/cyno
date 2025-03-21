@@ -147,6 +147,60 @@ function IdeathonContent() {
         toast.success('Records refreshed successfully');
     };
 
+    const handleExportData = () => {
+        try {
+            // Create CSV header
+            const headers = [
+                'Name',
+                'Email',
+                'Mobile',
+                'Drive Link',
+                'Team Members',
+                'Payment ID',
+                'College Name',
+                'UID',
+                'Status',
+                'Submission Date'
+            ].join(',');
+
+            // Convert submissions to CSV rows
+            const rows = submissions.map(sub => {
+                return [
+                    sub.name,
+                    sub.email,
+                    sub.mobile,
+                    sub.driveLink,
+                    (sub.teamMembers || []).join('; '),
+                    sub.paymentId,
+                    sub.collegeName || 'N/A',
+                    sub.uid,
+                    sub.status || 'pending',
+                    formatDate(sub.date)
+                ].map(field => `"${field}"`).join(',');
+            });
+
+            // Combine headers and rows
+            const csvContent = [headers, ...rows].join('\n');
+
+            // Create and download the file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const date = new Date().toISOString().split('T')[0];
+            a.download = `ideathon-submissions-${date}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            toast.success(`Exported ${submissions.length} submissions successfully`);
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            toast.error('Error exporting data');
+        }
+    };
+
     const formatDate = (timestamp: any) => {
         if (!timestamp) return 'N/A';
         const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -173,7 +227,13 @@ function IdeathonContent() {
                         A list of all ideathon submissions.
                     </p>
                 </div>
-                <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+                <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-4">
+                    <button
+                        onClick={handleExportData}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                        Export to Excel
+                    </button>
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}

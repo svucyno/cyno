@@ -60,6 +60,64 @@ function HackathonContent() {
         toast.success('Records refreshed successfully');
     };
 
+    const handleExportData = () => {
+        try {
+            // Create CSV header
+            const headers = [
+                'Team Name',
+                'Problem Statement',
+                'Leader Name',
+                'Team Members',
+                'Email',
+                'Mobile',
+                'Accommodation',
+                'Payment ID',
+                'College Name',
+                'Status',
+                'Submission Date',
+                'Total Amount'
+            ].join(',');
+
+            // Convert submissions to CSV rows
+            const rows = submissions.map(sub => {
+                return [
+                    sub.teamName,
+                    sub.problemStatement || 'N/A',
+                    sub.leaderName,
+                    (sub.teamMembers || sub.members || []).join('; '),
+                    sub.email,
+                    sub.mobile,
+                    sub.accommodation ? 'Yes' : 'No',
+                    sub.paymentId,
+                    sub.collegeName || 'N/A',
+                    sub.status,
+                    formatDate(sub.date),
+                    sub.totalAmount || 'N/A'
+                ].map(field => `"${field}"`).join(',');
+            });
+
+            // Combine headers and rows
+            const csvContent = [headers, ...rows].join('\n');
+
+            // Create and download the file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const date = new Date().toISOString().split('T')[0];
+            a.download = `hackathon-submissions-${date}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            toast.success(`Exported ${submissions.length} submissions successfully`);
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            toast.error('Error exporting data');
+        }
+    };
+
     const fetchSubmissions = async () => {
         setLoading(true);
         try {
@@ -239,7 +297,13 @@ function HackathonContent() {
                         A list of all hackathon submissions and their verification status.
                     </p>
                 </div>
-                <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+                <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-4">
+                    <button
+                        onClick={handleExportData}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                        Export to Excel
+                    </button>
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}
@@ -410,30 +474,32 @@ function HackathonContent() {
                                                     {formatDate(submission.date)}
                                                 </td>
                                                 <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                                    <div className="flex space-x-2">
-                                                        <button
-                                                            onClick={() => handleVerification(submission, true)}
-                                                            disabled={!!processingActions[submission.id]}
-                                                            className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${processingActions[submission.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        >
-                                                            {processingActions[submission.id] === 'verify' ? (
-                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                            ) : (
-                                                                'Verify'
-                                                            )}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleVerification(submission, false)}
-                                                            disabled={!!processingActions[submission.id]}
-                                                            className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${processingActions[submission.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        >
-                                                            {processingActions[submission.id] === 'reject' ? (
-                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                            ) : (
-                                                                'Reject'
-                                                            )}
-                                                        </button>
-                                                    </div>
+                                                    {submission.status === 'pending' && (
+                                                        <div className="flex space-x-2">
+                                                            <button
+                                                                onClick={() => handleVerification(submission, true)}
+                                                                disabled={!!processingActions[submission.id]}
+                                                                className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${processingActions[submission.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                {processingActions[submission.id] === 'verify' ? (
+                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                ) : (
+                                                                    'Verify'
+                                                                )}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleVerification(submission, false)}
+                                                                disabled={!!processingActions[submission.id]}
+                                                                className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${processingActions[submission.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                {processingActions[submission.id] === 'reject' ? (
+                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                ) : (
+                                                                    'Reject'
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))

@@ -130,6 +130,58 @@ function PaperPresentationContent() {
         toast.success('Records refreshed successfully');
     };
 
+    const handleExportData = () => {
+        try {
+            // Create CSV header
+            const headers = [
+                'Name',
+                'Email',
+                'Mobile',
+                'Drive Link',
+                'Payment ID',
+                'College Name',
+                'Team Members',
+                'Date',
+                'Status'
+            ].join(',');
+
+            // Convert submissions to CSV rows
+            const rows = submissions.map(sub => {
+                return [
+                    sub.name,
+                    sub.email,
+                    sub.mobile,
+                    sub.driveLink,
+                    sub.paymentId,
+                    sub.collegeName || 'N/A',
+                    (sub.teamMembers || []).join('; '),
+                    new Date(sub.date).toLocaleDateString(),
+                    sub.status || 'pending'
+                ].map(field => `"${field}"`).join(',');
+            });
+
+            // Combine headers and rows
+            const csvContent = [headers, ...rows].join('\n');
+
+            // Create and download the file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const date = new Date().toISOString().split('T')[0];
+            a.download = `paper-presentation-submissions-${date}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            toast.success(`Exported ${submissions.length} submissions successfully`);
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            toast.error('Error exporting data');
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-[600px]">
@@ -150,7 +202,13 @@ function PaperPresentationContent() {
                         A list of all paper presentation submissions and their verification status.
                     </p>
                 </div>
-                <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+                <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-4">
+                    <button
+                        onClick={handleExportData}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                        Export to Excel
+                    </button>
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}
@@ -231,6 +289,9 @@ function PaperPresentationContent() {
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Date
                                         </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            Status
+                                        </th>
                                         <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
                                             <span className="sr-only">Actions</span>
                                         </th>
@@ -277,31 +338,43 @@ function PaperPresentationContent() {
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {new Date(submission.date).toLocaleDateString()}
                                                 </td>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${submission.status === 'verified'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : submission.status === 'rejected'
+                                                            ? 'bg-red-100 text-red-800'
+                                                            : 'bg-yellow-100 text-yellow-800'
+                                                        }`}>
+                                                        {submission.status || 'pending'}
+                                                    </span>
+                                                </td>
                                                 <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                                    <div className="flex space-x-2">
-                                                        <button
-                                                            onClick={() => handleVerification(submission, true)}
-                                                            disabled={!!processingActions[submission.id]}
-                                                            className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${processingActions[submission.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        >
-                                                            {processingActions[submission.id] === 'verify' ? (
-                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                            ) : (
-                                                                'Verify'
-                                                            )}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleVerification(submission, false)}
-                                                            disabled={!!processingActions[submission.id]}
-                                                            className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${processingActions[submission.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        >
-                                                            {processingActions[submission.id] === 'reject' ? (
-                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                            ) : (
-                                                                'Reject'
-                                                            )}
-                                                        </button>
-                                                    </div>
+                                                    {submission.status === 'pending' && (
+                                                        <div className="flex space-x-2">
+                                                            <button
+                                                                onClick={() => handleVerification(submission, true)}
+                                                                disabled={!!processingActions[submission.id]}
+                                                                className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${processingActions[submission.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                {processingActions[submission.id] === 'verify' ? (
+                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                ) : (
+                                                                    'Verify'
+                                                                )}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleVerification(submission, false)}
+                                                                disabled={!!processingActions[submission.id]}
+                                                                className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${processingActions[submission.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                {processingActions[submission.id] === 'reject' ? (
+                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                ) : (
+                                                                    'Reject'
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))

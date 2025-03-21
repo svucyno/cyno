@@ -25,7 +25,6 @@ export default function FailedRegistrationsPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [allRegistrations, setAllRegistrations] = useState<FailedRegistration[]>([]);
-    const [selectedDate, setSelectedDate] = useState('');
 
     useEffect(() => {
         fetchFailedRegistrations();
@@ -63,43 +62,57 @@ export default function FailedRegistrationsPage() {
         }
     };
 
-    const handleExportEmails = () => {
-        if (!selectedDate) {
-            toast.error('Please select a date first');
-            return;
-        }
-
+    const handleExportData = () => {
         try {
-            // Filter registrations by selected date using date field
-            const selectedDateTime = new Date(selectedDate).setHours(0, 0, 0, 0);
-            const filteredRegistrations = registrations.filter(registration => {
-                const registrationDate = new Date(registration.date).setHours(0, 0, 0, 0);
-                return registrationDate === selectedDateTime;
+            // Create CSV header
+            const headers = [
+                'Name',
+                'Email',
+                'Mobile',
+                'Payment ID',
+                'Amount',
+                'Selected Events',
+                'Registration Date',
+                'Rejection Date',
+                'Rejection Reason',
+                'Status'
+            ].join(',');
+
+            // Convert registrations to CSV rows
+            const rows = registrations.map(reg => {
+                return [
+                    reg.name,
+                    reg.email,
+                    reg.mobile,
+                    reg.paymentId,
+                    reg.totalAmount,
+                    (reg.selectedEvents || []).join('; '),
+                    formatDate(reg.date),
+                    formatDate(reg.verifiedAt),
+                    reg.rejectionReason || 'N/A',
+                    reg.status || 'Rejected'
+                ].map(field => `"${field}"`).join(',');
             });
 
-            if (filteredRegistrations.length === 0) {
-                toast.info('No registrations found for selected date');
-                return;
-            }
+            // Combine headers and rows
+            const csvContent = [headers, ...rows].join('\n');
 
-            // Extract emails
-            const emails = filteredRegistrations.map(reg => reg.email).join(',');
-
-            // Create blob and download
-            const blob = new Blob([emails], { type: 'text/csv' });
+            // Create and download the file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `failed-registration-emails-${selectedDate}.csv`;
+            const date = new Date().toISOString().split('T')[0];
+            a.download = `failed-registrations-${date}.csv`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
 
-            toast.success(`Exported ${filteredRegistrations.length} emails`);
+            toast.success(`Exported ${registrations.length} registrations successfully`);
         } catch (error) {
-            console.error('Error exporting emails:', error);
-            toast.error('Error exporting emails');
+            console.error('Error exporting data:', error);
+            toast.error('Error exporting data');
         }
     };
 
@@ -130,24 +143,12 @@ export default function FailedRegistrationsPage() {
                         A list of all rejected registrations.
                     </p>
                 </div>
-                <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex sm:items-center space-x-4">
-                    <div>
-                        <label htmlFor="export-date" className="block text-sm font-medium text-gray-700 mb-1">
-                            Select Date
-                        </label>
-                        <input
-                            type="date"
-                            id="export-date"
-                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                        />
-                    </div>
+                <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
                     <button
-                        onClick={handleExportEmails}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-4"
+                        onClick={handleExportData}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                        Export Emails
+                        Export to Excel
                     </button>
                 </div>
             </div>

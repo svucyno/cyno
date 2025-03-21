@@ -17,6 +17,7 @@ interface Registration {
     selectedEvents?: string[];
     complementaryEvent?: string;
     uid: string;
+    collegeName?: string;
 }
 
 function RegistrationsContent() {
@@ -238,6 +239,9 @@ function RegistrationsContent() {
                                             Payment ID
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            College Name
+                                        </th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Amount
                                         </th>
                                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -275,6 +279,9 @@ function RegistrationsContent() {
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     {registration.paymentId}
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                    {registration.collegeName || 'N/A'}
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                     ₹{registration.totalAmount}

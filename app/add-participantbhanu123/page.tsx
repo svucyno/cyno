@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { toast } from 'react-toastify';
@@ -10,13 +10,9 @@ interface ParticipantForm {
     email: string;
     mobile: string;
     paymentId: string;
-    selectedEvent: string;
     totalAmount: number;
-}
-
-interface Event {
-    id: string;
-    name: string;
+    collegeName: string;
+    complementaryEvent: string;
 }
 
 export default function AddParticipant() {
@@ -25,31 +21,13 @@ export default function AddParticipant() {
         email: '',
         mobile: '',
         paymentId: '',
-        selectedEvent: '',
         totalAmount: 350,
+        collegeName: '',
+        complementaryEvent: '',
     });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
-    const [events, setEvents] = useState<Event[]>([]);
-
-    useEffect(() => {
-        const fetchEvents = async () => {
-            try {
-                const eventsSnapshot = await getDocs(collection(db, 'events'));
-                const eventsData = eventsSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    name: doc.data().name,
-                }));
-                setEvents(eventsData);
-            } catch (error) {
-                console.error('Error fetching events:', error);
-                setError('Failed to load events');
-            }
-        };
-
-        fetchEvents();
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,8 +37,9 @@ export default function AddParticipant() {
 
         try {
             // Validate form data
-            if (!formData.name || !formData.email || !formData.mobile || !formData.paymentId || !formData.selectedEvent) {
-                throw new Error('All fields are required, including event selection');
+            if (!formData.name || !formData.email || !formData.mobile || !formData.paymentId ||
+                !formData.collegeName || !formData.complementaryEvent) {
+                throw new Error('All fields are required, including complementary event');
             }
 
             // Validate email format
@@ -96,12 +75,14 @@ export default function AddParticipant() {
                 email: formData.email.toLowerCase(),
                 mobile: formData.mobile,
                 paymentId: formData.paymentId,
-                selectedEvents: [formData.selectedEvent],
+                selectedEvents: [formData.complementaryEvent],
                 totalAmount: formData.totalAmount,
                 date: new Date().toISOString(),
                 uid: uid,
-                isVerified: true, // Since this is going directly to successRegistrations
-                verifiedAt: new Date().toISOString()
+                isVerified: true,
+                verifiedAt: new Date().toISOString(),
+                collegeName: formData.collegeName,
+                complementaryEvent: formData.complementaryEvent
             });
 
             // Reset form and show success message
@@ -110,8 +91,9 @@ export default function AddParticipant() {
                 email: '',
                 mobile: '',
                 paymentId: '',
-                selectedEvent: '',
                 totalAmount: 350,
+                collegeName: '',
+                complementaryEvent: '',
             });
             setSuccess(true);
             toast.success(`Registration successful! Your ID is: ${uid}`);
@@ -237,22 +219,37 @@ export default function AddParticipant() {
                         </div>
 
                         <div>
-                            <label htmlFor="selectedEvent" className="block text-sm font-medium text-gray-700">
-                                Select Event
+                            <label htmlFor="collegeName" className="block text-sm font-medium text-gray-700">
+                                College Name
+                            </label>
+                            <input
+                                type="text"
+                                name="collegeName"
+                                id="collegeName"
+                                value={formData.collegeName}
+                                onChange={handleChange}
+                                className="mt-1 block w-full text-black border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                placeholder="Enter college name"
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="complementaryEvent" className="block text-sm font-medium text-gray-700">
+                                Select Complementary Event
                             </label>
                             <select
-                                name="selectedEvent"
-                                id="selectedEvent"
-                                value={formData.selectedEvent}
+                                name="complementaryEvent"
+                                id="complementaryEvent"
+                                value={formData.complementaryEvent}
                                 onChange={handleChange}
                                 className="mt-1 block w-full text-black border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             >
                                 <option value="">Select an event</option>
-                                {events.map((event) => (
-                                    <option key={event.id} value={event.name}>
-                                        {event.name}
-                                    </option>
-                                ))}
+                                <option value="Photography">Photography</option>
+                                <option value="Treasure Hunt">Treasure Hunt</option>
+                                <option value="Brain Battle Binge">Brain Battle Binge </option>
+                                <option value="Curious Clue">Curious Clue</option>
+                                <option value="The Matrix Mystery">The Matrix Mystery</option>
                             </select>
                         </div>
                     </div>

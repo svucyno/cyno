@@ -349,7 +349,7 @@ function PaperPresentationContent() {
                                                     </span>
                                                 </td>
                                                 <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                                    {submission.status === 'pending' && (
+                                                    {(!submission.status || submission.status === 'pending') && (
                                                         <div className="flex space-x-2">
                                                             <button
                                                                 onClick={() => handleVerification(submission, true)}

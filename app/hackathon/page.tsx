@@ -412,8 +412,8 @@ function HackathonContent() {
                                                     {submission.teamName}
                                                 </td>
                                                 <td className="px-3 py-4 text-sm text-gray-500">
-                                                    <div className="max-w-xs overflow-hidden">
-                                                        {submission.problemStatement}
+                                                    <div className="max-w-xs truncate" title={submission.problemStatement || ''}>
+                                                        {submission.problemStatement || 'N/A'}
                                                     </div>
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">

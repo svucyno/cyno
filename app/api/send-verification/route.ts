@@ -49,131 +49,60 @@ export async function POST(req: Request) {
         // Get submission type for email subject
         const submissionType = isPaper ? 'Paper Presentation' : isIdeathon ? 'Ideathon' : isHackathon ? 'Hackathon' : 'Event Registration';
 
+        // Simple and clear subject line
+        const subject = isRejected ? 
+            `Action Required: ${submissionType} Status Update` : 
+            `Confirmed: Your ${submissionType} Registration`;
+
         // Email content based on verification status
         const mailOptions = {
             from: '"CYNOSURE 2025" <svucyno@gmail.com>',
             to: to,
-            subject: isRejected ? `${submissionType} Update - CYNOSURE 2025` : `${submissionType} Verification Success - CYNOSURE 2025`,
+            subject: subject,
+            text: isRejected ? 
+                `Dear ${name},\n\nYour ${submissionType} submission (ID: ${uid}) requires attention. Please verify your payment details.\n\nContact us at svucyno@gmail.com for support.\n\nBest regards,\nCYNOSURE 2025 Team` 
+                : 
+                `Dear ${name},\n\nYour ${submissionType} registration (ID: ${uid}) has been verified.\n\nBest regards,\nCYNOSURE 2025 Team`,
             html: isRejected ? `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background: linear-gradient(to right, #dc2626, #b91c1c); padding: 20px; border-radius: 10px 10px 0 0;">
-                        <h1 style="color: white; margin: 0; text-align: center;">${submissionType} Update</h1>
-                    </div>
-                    
-                    <div style="background: white; padding: 20px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <p style="font-size: 16px; color: #374151;">Dear ${name},</p>
-                        
-                        <p style="font-size: 16px; color: #374151;">We regret to inform you that your ${submissionType.toLowerCase()} submission for CYNOSURE 2025 could not be verified at this time.</p>
-                        
-                        <div style="background: #FEF2F2; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <p style="margin: 0; color: #991B1B;">Registration ID: <strong>${uid}</strong></p>
-                        </div>
-                        
-                        <p style="font-size: 16px; color: #374151;">Your submission may have been rejected due to one of the following reasons:</p>
-                        <ul style="color: #374151; margin: 15px 0;">
-                            <li style="margin-bottom: 8px;">Incorrect UTR (Transaction Reference) Number provided</li>
-                            <li style="margin-bottom: 8px;">Transaction amount does not match the registration fee</li>
-                        </ul>
-                        
-                        <div style="background: #FEF2F2; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <p style="color: #991B1B; font-weight: 500; margin-bottom: 10px;">What should you do next?</p>
-                            <p style="color: #374151; margin: 0;">Please verify your UTR number and transaction amount. If you believe there's an error, contact the CYNOSURE team immediately with your payment proof and registration details.</p>
-                        </div>
-
-                        <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <p style="color: #374151; font-weight: 500; margin-bottom: 10px;">Join our WhatsApp Group for Support:</p>
-                            <a href="${whatsappLink}" style="display: inline-block; background: #25D366; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500;">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;">
-                                Join ${whatsappGroupName}
-                            </a>
-                            <p style="margin: 10px 0 0 0; font-size: 14px; color: #6B7280;">Get quick support and updates in our WhatsApp group.</p>
-                        </div>
-                        
-                        <p style="font-size: 16px; color: #374151;">Contact us at:</p>
-                        <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 10px 0;">
-                            <p style="margin: 0 0 8px 0;">
-                                <a href="mailto:svucyno@gmail.com" style="color: #2563EB; text-decoration: none;">📧 svucyno@gmail.com</a>
-                            </p>
-                            <p style="margin: 0; font-size: 14px; color: #6B7280;">Please include your Registration ID and payment details in your email.</p>
-                        </div>
-                        
-                        <p style="font-size: 16px; color: #374151; margin-top: 20px;">Best regards,<br>CYNOSURE 2025 Team</p>
-                    </div>
+                    <h2 style="color: #333333;">Registration Status Update</h2>
+                    <p style="color: #444444;">Dear ${name},</p>
+                    <p style="color: #444444;">Your ${submissionType.toLowerCase()} submission requires attention.</p>
+                    <p style="color: #444444;">Registration ID: ${uid}</p>
+                    <p style="color: #444444;">Please verify:</p>
+                    <ul style="color: #444444;">
+                        <li>Transaction Reference Number</li>
+                        <li>Payment Amount</li>
+                    </ul>
+                    <p style="color: #444444;">For support:</p>
+                    <p style="color: #444444;">Email: svucyno@gmail.com</p>
+                    <p style="color: #444444;">WhatsApp Support: <a href="${whatsappLink}" style="color: #2563eb;">${whatsappGroupName}</a></p>
+                    <p style="color: #444444;">Best regards,<br>CYNOSURE 2025 Team</p>
                 </div>
             ` : `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background: linear-gradient(to right, #2563eb, #4f46e5); padding: 20px; border-radius: 10px 10px 0 0;">
-                        <h1 style="color: white; margin: 0; text-align: center;">${submissionType} Verified</h1>
-                    </div>
-                    
-                    <div style="background: white; padding: 20px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <p style="font-size: 16px; color: #374151;">Dear ${name},</p>
-                        
-                        <p style="font-size: 16px; color: #374151;">Your ${submissionType.toLowerCase()} submission has been successfully verified${events ? ' for the following events:' : '.'}</p>
-                        
-                        ${events ? `
-                            <ul style="list-style: none; padding: 0;">
-                                ${events.map((event: string) => `
-                                    <li style="background: #EFF6FF; color: #1E40AF; padding: 8px 16px; margin: 8px 0; border-radius: 20px; display: inline-block; margin-right: 8px;">
-                                        ${event}
-                                    </li>
-                                `).join('')}
-                            </ul>
-                        ` : ''}
-                        
-                        ${complementaryEvent ? `
-                            <p style="font-size: 16px; color: #374151; margin-top: 16px;">Complementary Event:</p>
-                            <div style="display: inline-block; background: #F5F3FF; color: #5B21B6; padding: 8px 16px; border-radius: 20px; margin: 8px 0;">
-                                ${complementaryEvent}
-                            </div>
-                        ` : ''}
-                        
-                        ${isIdeathon && teamMembers && teamMembers.length > 0 ? `
-                            <p style="font-size: 16px; color: #374151; margin-top: 16px;">Team Members:</p>
-                            <div style="margin: 8px 0;">
-                                ${teamMembers.map((member: string) => `
-                                    <span style="display: inline-block; background: #F3F4F6; color: #374151; padding: 8px 16px; border-radius: 20px; margin: 4px 8px 4px 0;">
-                                        ${member}
-                                    </span>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-                        
-                        ${isHackathon ? `
-                            <div style="background: #ECFDF5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                                <p style="color: #065F46; font-weight: 500; margin-bottom: 10px;">Hackathon Details:</p>
-                                <p style="margin: 0 0 8px 0; color: #374151;"><strong>Team:</strong> ${teamName || 'Team'}</p>
-                                <p style="margin: 0 0 8px 0; color: #374151;"><strong>Problem Statement:</strong> ${problemStatement || 'To be worked on during the event'}</p>
-                                ${teamMembers && teamMembers.length > 0 ? `
-                                    <p style="margin: 0 0 8px 0; color: #374151;"><strong>Team Members:</strong></p>
-                                    <div style="margin: 8px 0;">
-                                        ${teamMembers.map((member: string, index: number) => `
-                                            <span style="display: inline-block; background: ${index === 0 ? '#D1FAE5' : '#F3F4F6'}; color: ${index === 0 ? '#065F46' : '#374151'}; padding: 8px 16px; border-radius: 20px; margin: 4px 8px 4px 0;">
-                                                ${index === 0 ? '👑 ' : ''}${member}
-                                            </span>
-                                        `).join('')}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        ` : ''}
-                        
-                        <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <p style="margin: 0; color: #374151;">Your Registration ID: <strong>${uid}</strong></p>
+                    <h2 style="color: #333333;">Registration Confirmed</h2>
+                    <p style="color: #444444;">Dear ${name},</p>
+                    <p style="color: #444444;">Your ${submissionType.toLowerCase()} registration has been verified.</p>
+                    <p style="color: #444444;">Registration ID: ${uid}</p>
+                    ${events ? `
+                        <p style="color: #444444;">Events:</p>
+                        <p style="color: #444444;">${events.join(', ')}</p>
+                    ` : ''}
+                    ${complementaryEvent ? `
+                        <p style="color: #444444;">Complementary Event: ${complementaryEvent}</p>
+                    ` : ''}
+                    ${isHackathon ? `
+                        <div style="margin-top: 15px;">
+                            <p style="color: #444444;">Team: ${teamName || 'Not specified'}</p>
+                            <p style="color: #444444;">Problem Statement: ${problemStatement || 'To be announced'}</p>
+                            ${teamMembers && teamMembers.length > 0 ? `
+                                <p style="color: #444444;">Team Members: ${teamMembers.join(', ')}</p>
+                            ` : ''}
                         </div>
-
-                        <div style="background: #F0FDF4; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <p style="color: #166534; font-weight: 500; margin-bottom: 10px;">Stay Updated!</p>
-                            <a href="${whatsappLink}" style="display: inline-block; background: #25D366; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500;">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;">
-                                Join ${whatsappGroupName}
-                            </a>
-                            <p style="margin: 10px 0 0 0; font-size: 14px; color: #166534;">Join our WhatsApp group for important updates and announcements.</p>
-                        </div>
-                        
-                        <p style="font-size: 16px; color: #374151;">Please keep this ID for future reference. You'll need it during the events.</p>
-                        
-                        <p style="font-size: 16px; color: #374151; margin-top: 20px;">Best regards,<br>CYNOSURE 2025 Team</p>
-                    </div>
+                    ` : ''}
+                    <p style="color: #444444;">WhatsApp Group: <a href="${whatsappLink}" style="color: #2563eb;">${whatsappGroupName}</a></p>
+                    <p style="color: #444444;">Best regards,<br>CYNOSURE 2025 Team</p>
                 </div>
             `
         };

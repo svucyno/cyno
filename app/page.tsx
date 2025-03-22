@@ -13,6 +13,7 @@ interface DashboardStats {
   failedRegistrations: number;
   pendingRegistrations: number;
   hackathonSubmissions: number;
+  hackathonTotalMembers: number;
   ideathonSubmissions: number;
   paperSubmissions: number;
 }
@@ -34,6 +35,7 @@ function DashboardContent() {
     failedRegistrations: 0,
     pendingRegistrations: 0,
     hackathonSubmissions: 0,
+    hackathonTotalMembers: 0,
     ideathonSubmissions: 0,
     paperSubmissions: 0
   });
@@ -54,12 +56,23 @@ function DashboardContent() {
       const ideathonSnapshot = await getDocs(collection(db, 'ideathon_registrations'));
       const paperSnapshot = await getDocs(collection(db, 'paper_presentations'));
 
+      // Calculate total hackathon members
+      let totalHackathonMembers = 0;
+      hackathonSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const members = data.teamMembers || data.members || [];
+        if (Array.isArray(members)) {
+          totalHackathonMembers += members.length;
+        }
+      });
+
       setStats({
         totalRegistrations: registrationsSnapshot.size + successRegistrationsSnapshot.size + failedRegistrationsSnapshot.size,
         successfulRegistrations: successRegistrationsSnapshot.size,
         failedRegistrations: failedRegistrationsSnapshot.size,
         pendingRegistrations: registrationsSnapshot.size,
         hackathonSubmissions: hackathonSnapshot.size,
+        hackathonTotalMembers: totalHackathonMembers,
         ideathonSubmissions: ideathonSnapshot.size,
         paperSubmissions: paperSnapshot.size
       });
@@ -246,8 +259,16 @@ function DashboardContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
               </svg>
             </div>
-            <p className="text-3xl font-bold">{stats.hackathonSubmissions}</p>
-            <p className="text-purple-100 mt-1">Active Submissions</p>
+            <div className="space-y-2">
+              <div>
+                <p className="text-3xl font-bold">{stats.hackathonSubmissions}</p>
+                <p className="text-purple-100 mt-1">Active Teams</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.hackathonTotalMembers}</p>
+                <p className="text-purple-100 mt-1">Total Participants</p>
+              </div>
+            </div>
           </div>
         </div>
 

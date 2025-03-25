@@ -41,8 +41,8 @@ export async function POST(req: Request) {
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: 'svucyno@gmail.com',
-                pass: 'ktka pogf kskp jzek'
+                user: 'cynosvu@gmail.com',
+                pass: 'xcyl xzmg mjhr ocoa'
             }
         });
 
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
 
         // Email content based on verification status
         const mailOptions = {
-            from: '"CYNOSURE 2025" <svucyno@gmail.com>',
+            from: '"CYNOSURE 2025" cynosvu@gmail.com',
             to: to,
             subject: subject,
             text: isRejected ? 

@@ -336,7 +336,7 @@ export default function EventDetails() {
                             ) : (
                                 filteredRegistrations.map((participant) => (
                                     <div
-                                        key={participant.id}
+                                        key={participant.uid}
                                         className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors duration-150"
                                     >
                                         <div>

@@ -250,6 +250,14 @@ export default function AddParticipant() {
                                 <option value="Brain Battle Binge">Brain Battle Binge </option>
                                 <option value="Curious Clue">Curious Clue</option>
                                 <option value="The Matrix Mystery">The Matrix Mystery</option>
+                                <option value="code flix marathon">code flix marathon</option>
+                                <option value="Blind coding">blind coding</option>
+                                <option value="tech quiz">tech quiz</option>
+                                <option value="ideathon">ideathon</option>
+                                <option value="The query games">the query games</option>
+                                <option value="web wreath">web wreath</option>
+                                <option value="Hackathon">Hackathon</option>
+                                <option value="Pitch paper perfect">pitch perfect paper</option>
                             </select>
                         </div>
                     </div>
